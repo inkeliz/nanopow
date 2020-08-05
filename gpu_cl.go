@@ -182,7 +182,25 @@ enum Blake2b_IV
  	nano_xor_iv6 = 0xe07c265404be4294, // iv6 ^ ~0
 };
 
+#ifdef  cl_amd_media_ops
+#pragma OPENCL EXTENSION cl_amd_media_ops : enable
+static inline ulong rotr64(ulong x, ulong shift)
+{
+    uint lo = x;
+    uint hi = (uint) (x >> 32);
+    uint r_lo, r_hi;
+    if (shift < 32) {
+        r_lo = amd_bitalign(hi, lo, (uint) shift);
+        r_hi = amd_bitalign(lo, hi, (uint) shift);
+    } else {
+        r_lo = amd_bitalign(lo, hi, (uint) shift - 32);
+        r_hi = amd_bitalign(hi, lo, (uint) shift - 32);
+    }
+    return upsample(r_hi, r_lo);
+}
+#else
 static inline ulong rotr64(ulong a, ulong shift) { return rotate(a, 64 - shift); }
+#endif
 
 #define G32(m0, m1, m2, m3, vva, vb1, vb2, vvc, vd1, vd2) \
   do {                                                    \
