@@ -232,7 +232,7 @@ static inline ulong rotr64(ulong a, ulong shift) { return rotate(a, 64 - shift);
     G2v_split(m12, m13, m14, m15, 2, vv[7/2].s1, vv[4/2].s0,  8, vv[13/2].s1, vv[14/2].s0); \
   } while(0)
 
-static inline ulong blake2b(ulong const nonce, __global ulong const * h)
+static inline ulong blake2b(ulong const nonce, __constant ulong * h)
 {
   ulong2 vv[8] = {
     { nano_xor_iv0, iv1 },
@@ -265,14 +265,16 @@ static inline ulong blake2b(ulong const nonce, __global ulong const * h)
 #undef G2v_split
 #undef ROUND
 
-__kernel void nano_work (__global ulong const * attempt, __global ulong * result_a, __global uchar const * item_a, __global ulong const * difficulty_a, __global ulong * result_hash_a)
+__kernel void nano_work (__constant ulong * attempt,
+                         __global ulong * restrict result_a,
+                         __constant uchar * item_a,
+                         __constant ulong * restrict difficulty_a,
+                         __global ulong * result_hash_a)
 {
-	int const thread = get_global_id (0);
-	ulong attempt_l = *(__global ulong const *) attempt + thread;
-	ulong result = blake2b(attempt_l, item_a);
-	if (result >= * difficulty_a)
-	{
-		*result_a = attempt_l;
-		*result_hash_a = result;
-	}
+    const ulong attempt_l = *attempt + get_global_id(0);
+    const ulong result = blake2b(attempt_l, item_a);
+    if (result >= *difficulty_a) {
+        *result_a = attempt_l;
+        *result_hash_a = result;
+    }
 }`
