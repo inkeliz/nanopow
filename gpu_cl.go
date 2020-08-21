@@ -184,38 +184,31 @@ enum Blake2b_IV
 
 #ifdef  cl_amd_media_ops
 #pragma OPENCL EXTENSION cl_amd_media_ops : enable
-static inline ulong rotr64(ulong x, ulong shift)
+static inline ulong rotr64(ulong x, int shift)
 {
-    uint lo = x;
-    uint hi = (uint) (x >> 32);
-    uint r_lo, r_hi;
-    if (shift < 32) {
-        r_lo = amd_bitalign(hi, lo, (uint) shift);
-        r_hi = amd_bitalign(lo, hi, (uint) shift);
-    } else {
-        r_lo = amd_bitalign(lo, hi, (uint) shift - 32);
-        r_hi = amd_bitalign(hi, lo, (uint) shift - 32);
-    }
-    return upsample(r_hi, r_lo);
+    uint2 x2 = as_uint2(x);
+    if (shift < 32)
+        return as_ulong(amd_bitalign(x2.s10, x2, shift));
+    return as_ulong(amd_bitalign(x2, x2.s10, (shift - 32)));
 }
 #else
-static inline ulong rotr64(ulong a, ulong shift) { return rotate(a, 64 - shift); }
+static inline ulong rotr64(ulong a, int shift) { return rotate(a, 64UL - shift); }
 #endif
 
 #define G32(m0, m1, m2, m3, vva, vb1, vb2, vvc, vd1, vd2) \
   do {                                                    \
     vva += (ulong2) (vb1 + m0, vb2 + m2);                 \
-    vd1 = rotr64(vd1 ^ vva.s0, 32UL);                     \
-    vd2 = rotr64(vd2 ^ vva.s1, 32UL);                     \
+    vd1 = rotr64(vd1 ^ vva.s0, 32);                       \
+    vd2 = rotr64(vd2 ^ vva.s1, 32);                       \
     vvc += (ulong2) (vd1, vd2);                           \
-    vb1 = rotr64(vb1 ^ vvc.s0, 24UL);                     \
-    vb2 = rotr64(vb2 ^ vvc.s1, 24UL);                     \
+    vb1 = rotr64(vb1 ^ vvc.s0, 24);                       \
+    vb2 = rotr64(vb2 ^ vvc.s1, 24);                       \
     vva += (ulong2) (vb1 + m1, vb2 + m3);                 \
-    vd1 = rotr64(vd1 ^ vva.s0, 16UL);                     \
-    vd2 = rotr64(vd2 ^ vva.s1, 16UL);                     \
+    vd1 = rotr64(vd1 ^ vva.s0, 16);                       \
+    vd2 = rotr64(vd2 ^ vva.s1, 16);                       \
     vvc += (ulong2) (vd1, vd2);                           \
-    vb1 = rotr64(vb1 ^ vvc.s0, 63UL);                     \
-    vb2 = rotr64(vb2 ^ vvc.s1, 63UL);                     \
+    vb1 = rotr64(vb1 ^ vvc.s0, 63);                       \
+    vb2 = rotr64(vb2 ^ vvc.s1, 63);                       \
   } while (0)
 
 #define G2v(m0, m1, m2, m3, a, b, c, d) \
@@ -232,7 +225,7 @@ static inline ulong rotr64(ulong a, ulong shift) { return rotate(a, 64 - shift);
     G2v_split(m12, m13, m14, m15, 2, vv[7/2].s1, vv[4/2].s0,  8, vv[13/2].s1, vv[14/2].s0); \
   } while(0)
 
-static inline ulong blake2b(ulong const nonce, __constant ulong * h)
+static inline ulong blake2b(ulong const nonce, ulong4 const hash)
 {
   ulong2 vv[8] = {
     { nano_xor_iv0, iv1 },
@@ -244,6 +237,7 @@ static inline ulong blake2b(ulong const nonce, __constant ulong * h)
     { nano_xor_iv4, iv5 },
     { nano_xor_iv6, iv7 },
   };
+  ulong *h = &hash;
 
   ROUND(nonce, h[0], h[1], h[2], h[3], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   ROUND(0, 0, h[3], 0, 0, 0, 0, 0, h[0], 0, nonce, h[1], 0, 0, 0, h[2]);
@@ -267,12 +261,12 @@ static inline ulong blake2b(ulong const nonce, __constant ulong * h)
 
 __kernel void nano_work (__constant ulong * attempt,
                          __global ulong * restrict result_a,
-                         __constant uchar * item_a,
-                         __constant ulong * restrict difficulty_a,
-                         __global ulong * result_hash_a)
+                         __constant ulong * item_a,
+                         __constant ulong * difficulty_a,
+                         __global ulong * restrict result_hash_a)
 {
     const ulong attempt_l = *attempt + get_global_id(0);
-    const ulong result = blake2b(attempt_l, item_a);
+    const ulong result = blake2b(attempt_l, vload4(0, item_a));
     if (result >= *difficulty_a) {
         *result_a = attempt_l;
         *result_hash_a = result;
