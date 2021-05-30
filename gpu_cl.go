@@ -79,6 +79,14 @@ func (w *clWorker) GenerateWork(ctx *Context, root []byte, difficulty uint64) (e
 				return err
 			}
 
+			if err = w.queue.EnqueueWriteBuffer(w.ResultBuffer.Buffer, false, w.ResultBuffer.size, unsafe.Pointer(&result)); err != nil {
+				return err
+			}
+
+			if err = w.queue.EnqueueWriteBuffer(w.ResultHashBuffer.Buffer, false, w.ResultHashBuffer.size, unsafe.Pointer(&resulthash[0])); err != nil {
+				return err
+			}
+
 			if err = w.queue.EnqueueNDRangeKernel(w.kernel, 1, []uint64{w.thread}); err != nil {
 				return err
 			}
