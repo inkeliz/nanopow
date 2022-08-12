@@ -1,3 +1,4 @@
+//go:build cl
 // +build cl
 
 package nanopow
@@ -28,12 +29,11 @@ type clWorker struct {
 	ResultHashBuffer clBuffer
 }
 
-func NewWorkerGPU() (*clWorker, error) {
+func NewWorkerGPU(device opencl.Device) (*clWorker, error) {
 	return NewWorkerGPUThread(1 << 23)
 }
 
-func NewWorkerGPUThread(thread uint64) (*clWorker, error) {
-	device, err := getDevice()
+func NewWorkerGPUThread(thread uint64, device opencl.Device) (*clWorker, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (w *clWorker) init() (err error) {
 	return nil
 }
 
-func getDevice() (dv opencl.Device, err error) {
+func GetDevice() (dv opencl.Device, err error) {
 	platforms, err := opencl.GetPlatforms()
 	if err != nil {
 		return dv, ErrNoDeviceAvailable

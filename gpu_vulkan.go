@@ -1,8 +1,9 @@
+//go:build vk
 // +build vk
 
 package nanopow
 
-type vkWorker struct {}
+type vkWorker struct{}
 
 func NewWorkerGPU() (*vkWorker, error) {
 	return NewWorkerGPUThread(0)
