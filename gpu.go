@@ -1,5 +1,5 @@
-//go:build !cl && !vk && !gl
-// +build !cl,!vk,!gl
+//go:build !cl
+// +build !cl
 
 package nanopow
 

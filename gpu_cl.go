@@ -30,7 +30,7 @@ type clWorker struct {
 }
 
 func NewWorkerGPU(device opencl.Device) (*clWorker, error) {
-	return NewWorkerGPUThread(1 << 23)
+	return NewWorkerGPUThread(1<<23, device)
 }
 
 func NewWorkerGPUThread(thread uint64, device opencl.Device) (*clWorker, error) {
