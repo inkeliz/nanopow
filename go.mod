@@ -1,4 +1,4 @@
-module github.com/bbedward/nanopow
+module github.com/inkeliz/nanopow
 
 go 1.19
 
