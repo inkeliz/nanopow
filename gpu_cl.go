@@ -4,8 +4,9 @@
 package nanopow
 
 import (
-	"github.com/Inkeliz/go-opencl/opencl"
 	"unsafe"
+
+	"github.com/Inkeliz/go-opencl/opencl"
 )
 
 type clBuffer struct {
@@ -34,10 +35,6 @@ func NewWorkerGPU(device opencl.Device) (*clWorker, error) {
 }
 
 func NewWorkerGPUThread(thread uint64, device opencl.Device) (*clWorker, error) {
-	if err != nil {
-		return nil, err
-	}
-
 	c := &clWorker{
 		thread:           thread,
 		device:           device,
@@ -48,7 +45,7 @@ func NewWorkerGPUThread(thread uint64, device opencl.Device) (*clWorker, error) 
 		ResultHashBuffer: clBuffer{size: 8},
 	}
 
-	err = c.init()
+	err := c.init()
 	if err != nil {
 		return nil, err
 	}
