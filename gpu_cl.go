@@ -1,10 +1,12 @@
+//go:build cl
 // +build cl
 
 package nanopow
 
 import (
-	"github.com/Inkeliz/go-opencl/opencl"
 	"unsafe"
+
+	"github.com/Inkeliz/go-opencl/opencl"
 )
 
 type clBuffer struct {
@@ -28,16 +30,11 @@ type clWorker struct {
 	ResultHashBuffer clBuffer
 }
 
-func NewWorkerGPU() (*clWorker, error) {
-	return NewWorkerGPUThread(1 << 23)
+func NewWorkerGPU(device opencl.Device) (*clWorker, error) {
+	return NewWorkerGPUThread(1<<23, device)
 }
 
-func NewWorkerGPUThread(thread uint64) (*clWorker, error) {
-	device, err := getDevice()
-	if err != nil {
-		return nil, err
-	}
-
+func NewWorkerGPUThread(thread uint64, device opencl.Device) (*clWorker, error) {
 	c := &clWorker{
 		thread:           thread,
 		device:           device,
@@ -48,7 +45,7 @@ func NewWorkerGPUThread(thread uint64) (*clWorker, error) {
 		ResultHashBuffer: clBuffer{size: 8},
 	}
 
-	err = c.init()
+	err := c.init()
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +150,7 @@ func (w *clWorker) init() (err error) {
 	return nil
 }
 
-func getDevice() (dv opencl.Device, err error) {
+func GetDevice() (dv opencl.Device, err error) {
 	platforms, err := opencl.GetPlatforms()
 	if err != nil {
 		return dv, ErrNoDeviceAvailable
